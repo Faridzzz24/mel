@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>✿ Mel's World ✿</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="trail-canvas"></canvas>
+  <canvas id="confetti-canvas"></canvas>
+  <div id="emoji-rain"></div>
+
+  <div id="camera-flash"></div>
+
+  <!-- =================== LANDING =================== -->
+  <div id="landing" class="screen active">
+    <div class="landing-content">
+      <div class="orbit-ring">
+        <div class="orbit-photo" style="--o:0"><div class="orbit-face" data-idx="0"></div></div>
+        <div class="orbit-photo" style="--o:1"><div class="orbit-face" data-idx="1"></div></div>
+        <div class="orbit-photo" style="--o:2"><div class="orbit-face" data-idx="2"></div></div>
+        <div class="orbit-photo" style="--o:3"><div class="orbit-face" data-idx="3"></div></div>
+        <div class="orbit-photo" style="--o:4"><div class="orbit-face" data-idx="4"></div></div>
+        <div class="orbit-photo" style="--o:5"><div class="orbit-face" data-idx="5"></div></div>
+        <div class="orbit-photo" style="--o:6"><div class="orbit-face" data-idx="6"></div></div>
+        <div class="center-photo">
+          <img id="center-img-a" class="cimg active" src="photo4.jpeg" alt="Mel">
+          <img id="center-img-b" class="cimg" src="A3.jpeg" alt="Mel">
+          <div class="center-shine"></div>
+        </div>
+      </div>
+
+      <h1 class="landing-title">Mel<span class="title-dot">✿</span>World</h1>
+      <p class="landing-sub">pilih gamenya!</p>
+      <button id="enter-btn" onclick="enterPlayground()">mulai →</button>
+    </div>
+  </div>
+
+  <!-- =================== PLAYGROUND =================== -->
+  <div id="playground" class="screen">
+    <nav id="tab-bar">
+      <button class="tab active" data-tab="photobooth" onclick="switchTab('photobooth')">📸 photobooth</button>
+      <button class="tab" data-tab="gacha" onclick="switchTab('gacha')">🎰 gacha</button>
+      <button class="tab" data-tab="manjain" onclick="switchTab('manjain')">💖 manjain</button>
+    </nav>
+
+    <!-- ===== 1. PHOTOBOOTH GEMAS ===== -->
+    <section id="tab-photobooth" class="tab-content active">
+      <div class="pb-container">
+        <!-- Photo Navigation Header -->
+        <div class="pb-header">
+          <button class="pb-nav-btn" onclick="prevPhoto()" title="Foto Sebelumnya">‹</button>
+          <div class="pb-title-wrap">
+            <span id="pb-photo-title" class="pb-title">Mel Manis 🍓</span>
+            <span id="pb-photo-idx" class="pb-counter">1 / 7</span>
+          </div>
+          <button class="pb-nav-btn" onclick="nextPhoto()" title="Foto Selanjutnya">›</button>
+        </div>
+
+        <!-- Photo Management Bar (Add/Delete/Reset) -->
+        <div class="pb-photo-mgr">
+          <label class="pb-mgr-btn add" title="Tambah foto baru dari galeri">
+            <input type="file" id="photo-upload-input" accept="image/*" style="display:none;" onchange="handlePhotoUpload(event)">
+            ➕ Tambah Foto
+          </label>
+          <button class="pb-mgr-btn delete" onclick="deleteCurrentPhoto()" title="Hapus foto ini dari galeri">
+            🗑️ Hapus Foto
+          </button>
+          <button class="pb-mgr-btn reset" onclick="resetDefaultPhotos()" title="Kembalikan foto bawaan">
+            ↺ Reset Foto
+          </button>
+        </div>
+
+        <!-- Polaroid Frame -->
+        <div class="polaroid-frame" id="polaroid-frame">
+          <div class="polaroid-pin">✿</div>
+          <div class="polaroid-photo-wrapper" id="pb-photo-wrapper">
+            <img id="pb-main-img" src="A1.jpeg" alt="Mel" class="pb-img filter-normal">
+            <div id="pb-sticker-layer"></div>
+          </div>
+          <div class="polaroid-caption">
+            <span id="pb-caption-text">✿ Mel's Cutest Angle ✿</span>
+            <span class="polaroid-date">Today & Forever 💖</span>
+          </div>
+        </div>
+
+        <!-- Controls & Stickers -->
+        <div class="pb-controls">
+          <div class="sticker-tray-header">
+            <span class="tray-title">✨ Tempel Stiker Lucu (geser stikernya):</span>
+            <button class="pb-clear-btn" onclick="clearStickers()">🧹 Hapus Stiker</button>
+          </div>
+          <div class="sticker-tray" id="sticker-tray">
+            <button class="sticker-btn" onclick="addSticker('🐱')">🐱 Telinga Kucing</button>
+            <button class="sticker-btn" onclick="addSticker('🎀')">🎀 Pita Pink</button>
+            <button class="sticker-btn" onclick="addSticker('💖')">💖 Pipi Merah</button>
+            <button class="sticker-btn" onclick="addSticker('👑')">👑 Mahkota</button>
+            <button class="sticker-btn" onclick="addSticker('🕶️')">🕶️ Kacamata Love</button>
+            <button class="sticker-btn" onclick="addSticker('🌸')">🌸 Sakura</button>
+            <button class="sticker-btn" onclick="addSticker('🧋')">🧋 Boba</button>
+            <button class="sticker-btn" onclick="addSticker('🐾')">🐾 Cakar Imut</button>
+            <button class="sticker-btn tag-btn" onclick="addSticker('tag-gemas')">🏷️ 100% Gemas</button>
+            <button class="sticker-btn tag-btn" onclick="addSticker('tag-sayang')">🏷️ Punya Ayang 🥰</button>
+            <button class="sticker-btn tag-btn" onclick="addSticker('tag-bidadari')">🏷️ Bidadari Bumi ✨</button>
+          </div>
+
+          <div class="pb-action-row">
+            <button class="pb-action-btn" onclick="cycleFilter()">🎨 Filter: <span id="pb-filter-name">Normal</span></button>
+            <button class="pb-action-btn highlight" onclick="takeSnapshot()">📸 Jepret & Simpan Foto!</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 2. GACHA (TETAP & DIPERTINGGI KUALITASNYA) ===== -->
+    <section id="tab-gacha" class="tab-content">
+      <div id="gacha-wrap">
+        <div id="gacha-machine">
+          <div id="gacha-top-bar"></div>
+          <div id="gacha-reels">
+            <div class="reel" id="reel-0"><div class="reel-window"><div class="reel-face"></div></div></div>
+            <div class="reel-sep">✦</div>
+            <div class="reel" id="reel-1"><div class="reel-window"><div class="reel-face"></div></div></div>
+            <div class="reel-sep">✦</div>
+            <div class="reel" id="reel-2"><div class="reel-window"><div class="reel-face"></div></div></div>
+          </div>
+          <div id="gacha-shine-line"></div>
+        </div>
+        <div id="gacha-result">&nbsp;</div>
+        <button id="gacha-btn" onclick="spinGacha()">🎰 SPIN!</button>
+        <div id="gacha-streak">jackpot streak: <b id="gacha-jackpot-count">0</b></div>
+      </div>
+
+      <!-- Gacha Jackpot Winner Modal -->
+      <div id="gacha-win-modal" class="gacha-modal hidden">
+        <div class="gacha-modal-content">
+          <div class="gacha-modal-sparkle">✨ 🎰 JACKPOT KEMBAR 3! 🎰 ✨</div>
+          <div class="gacha-win-photo-box">
+            <img id="gacha-win-img" src="A1.jpeg" alt="Jackpot Mel">
+            <div class="gacha-win-shine"></div>
+          </div>
+          <h3 id="gacha-win-title" class="gacha-win-title">Mel Versi Ini Sangat Cantik!</h3>
+          <p class="gacha-win-sub">Hoki kamu hari ini: 1000000% 💖</p>
+          <button class="modal-btn" onclick="closeGachaModal()">Keren! Main Lagi 🎰</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 3. MANJAIN MEL (INTERACTIVE TAMAGOTCHI & LOVE METER) ===== -->
+    <section id="tab-manjain" class="tab-content">
+      <div class="manjain-container">
+        <!-- Love Meter -->
+        <div class="love-meter-box">
+          <div class="love-meter-info">
+            <span class="love-label">💖 Gemas Meter</span>
+            <span id="love-status-text" class="love-status">Butuh Dimanja 🥺</span>
+            <span id="love-pct-text" class="love-pct">25%</span>
+          </div>
+          <div class="love-bar-track">
+            <div id="love-bar-fill" class="love-bar-fill" style="width: 25%;"></div>
+          </div>
+        </div>
+
+        <!-- Mel Interactive Portrait -->
+        <div class="mel-portrait-card" id="mel-portrait-card">
+          <!-- Speech Bubble -->
+          <div class="mel-speech-bubble" id="mel-speech">
+            <span id="mel-speech-text">Hai ayang! Hari ini mau manjain Mel apa nih? 🥺👉👈</span>
+          </div>
+
+          <!-- Avatar Image Box -->
+          <div class="mel-img-wrapper" id="mel-img-box" onclick="pamperMel('pat')">
+            <img id="manjain-img" src="A1.jpeg" alt="Mel" class="mel-main-img">
+            <div class="portrait-aura"></div>
+            <div class="tap-hint">👆 Puk-puk kepala Mel!</div>
+            <div id="manjain-floating-fx"></div>
+          </div>
+
+          <div class="mel-card-footer">
+            <span id="mel-mood-tag" class="mel-mood-tag">✨ Mood: Manja Banget</span>
+            <button class="change-photo-btn" onclick="nextManjainPhoto()">🔄 Ganti Foto Mel</button>
+          </div>
+        </div>
+
+        <!-- Action Dock -->
+        <div class="action-dock">
+          <button class="action-dock-btn" onclick="pamperMel('boba')">
+            <span class="action-icon">🧋</span>
+            <span class="action-label">Beri Boba</span>
+          </button>
+          <button class="action-dock-btn" onclick="pamperMel('cake')">
+            <span class="action-icon">🍰</span>
+            <span class="action-label">Kasih Kue</span>
+          </button>
+          <button class="action-dock-btn" onclick="pamperMel('pat')">
+            <span class="action-icon">💆‍♀️</span>
+            <span class="action-label">Puk-puk</span>
+          </button>
+          <button class="action-dock-btn" onclick="pamperMel('flower')">
+            <span class="action-icon">🌸</span>
+            <span class="action-label">Beri Bunga</span>
+          </button>
+          <button class="action-dock-btn" onclick="pamperMel('gombal')">
+            <span class="action-icon">💌</span>
+            <span class="action-label">Gombalin</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 100% Love Celebration Modal -->
+      <div id="love-celebration-modal" class="love-modal hidden">
+        <div class="love-modal-content">
+          <div class="modal-badge">👑 LEVEL GEMAS MAKSIMAL! 👑</div>
+          <div class="modal-photo-box">
+            <img id="celebrate-img" src="photo4.jpeg" alt="Mel Bahagia">
+            <div class="crown-overlay">👑</div>
+          </div>
+          <h2 class="modal-title">Mel Sangat Bahagia! 🥰</h2>
+          <p class="modal-desc">Selamat! Kamu berhasil memenuhi Gemas Meter Mel sampai 100%! Mel kasih kamu gelar: <br><b class="reward-title">Ayang Paling Perhatian Sejagat Raya! 💖✨</b></p>
+          <button class="modal-btn" onclick="closeLoveCelebration()">Manjain Lagi 🔄</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast-box" class="toast-box"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
