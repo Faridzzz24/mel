@@ -510,17 +510,17 @@ function takeSnapshot(){
   setTimeout(() => {
     flash.classList.remove('flash');
     fireConfetti();
-    renderAndDownloadPhotoOnly();
+    renderAndDownloadPolaroid();
   }, 140);
 }
 
-function renderAndDownloadPhotoOnly(){
+function renderAndDownloadPolaroid(){
   const p = PHOTOS[pbPhotoIdx];
 
   const canvas = document.createElement('canvas');
-  // High-res photo aspect ratio matching preview wrapper
+  // High-res Polaroid canvas dimensions
   const cw = 720;
-  const ch = 880;
+  const ch = 920;
   canvas.width = cw;
   canvas.height = ch;
   const ctx = canvas.getContext('2d');
@@ -529,21 +529,53 @@ function renderAndDownloadPhotoOnly(){
   img.crossOrigin = 'anonymous';
 
   img.onload = () => {
-    drawPhotoOnlyAndExport(ctx, img, cw, ch);
+    drawPolaroidCardAndExport(ctx, img, cw, ch);
   };
   img.onerror = () => {
     const fallback = new Image();
-    fallback.onload = () => drawPhotoOnlyAndExport(ctx, fallback, cw, ch);
+    fallback.onload = () => drawPolaroidCardAndExport(ctx, fallback, cw, ch);
     fallback.src = p.src;
   };
   img.src = p.src;
 }
 
-function drawPhotoOnlyAndExport(ctx, img, cw, ch){
+function drawPolaroidCardAndExport(ctx, img, cw, ch){
   const p = PHOTOS[pbPhotoIdx];
 
-  // 1. Draw ONLY the photo with active filter and crop
+  // 1. Draw Ivory Paper Polaroid Frame
   ctx.save();
+  ctx.fillStyle = '#fbf9f5';
+  ctx.shadowColor = 'rgba(0,0,0,0.18)';
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetY = 8;
+  roundRect(ctx, 20, 20, cw - 40, ch - 40, 24);
+  ctx.fill();
+  ctx.restore();
+
+  // Subtle border around frame
+  ctx.strokeStyle = 'rgba(230, 194, 191, 0.45)';
+  ctx.lineWidth = 2;
+  roundRect(ctx, 20, 20, cw - 40, ch - 40, 24);
+  ctx.stroke();
+
+  // 2. Top Pin ✿
+  ctx.font = '28px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#d4a9a4';
+  ctx.fillText('✿', cw / 2, 45);
+
+  // 3. Photo Area inside frame
+  const photoX = 50;
+  const photoY = 70;
+  const photoW = cw - 100; // 620
+  const photoH = 700;      // 700
+
+  ctx.save();
+  roundRect(ctx, photoX, photoY, photoW, photoH, 14);
+  ctx.clip();
+
+  // Filter effect
   const filterClass = PB_FILTERS[pbFilterIdx];
   if (filterClass === 'filter-blush') {
     ctx.filter = 'saturate(1.22) contrast(1.05) brightness(1.04) hue-rotate(-8deg)';
@@ -557,7 +589,8 @@ function drawPhotoOnlyAndExport(ctx, img, cw, ch){
     ctx.filter = 'none';
   }
 
-  const scale = Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
+  // Object-fit: cover with p.pos
+  const scale = Math.max(photoW / img.naturalWidth, photoH / img.naturalHeight);
   const sW = img.naturalWidth * scale;
   const sH = img.naturalHeight * scale;
 
@@ -566,13 +599,13 @@ function drawPhotoOnlyAndExport(ctx, img, cw, ch){
   if (parts[0] !== 'center') xPct = parseFloat(parts[0]) / 100;
   if (parts[1] && parts[1] !== 'center') yPct = parseFloat(parts[1]) / 100;
 
-  const dx = -(sW - cw) * xPct;
-  const dy = -(sH - ch) * yPct;
+  const dx = photoX - (sW - photoW) * xPct;
+  const dy = photoY - (sH - photoH) * yPct;
 
   ctx.drawImage(img, dx, dy, sW, sH);
   ctx.restore();
 
-  // 2. Draw placed stickers directly onto photo
+  // 4. Placed Stickers inside photo area
   const layer = document.getElementById('pb-sticker-layer');
   const wrapper = document.getElementById('pb-photo-wrapper');
   const wRect = wrapper.getBoundingClientRect();
@@ -582,8 +615,8 @@ function drawPhotoOnlyAndExport(ctx, img, cw, ch){
     const rx = (sRect.left - wRect.left + sRect.width / 2) / wRect.width;
     const ry = (sRect.top - wRect.top + sRect.height / 2) / wRect.height;
 
-    const sx = rx * cw;
-    const sy = ry * ch;
+    const sx = photoX + rx * photoW;
+    const sy = photoY + ry * photoH;
 
     ctx.save();
     ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
@@ -592,10 +625,10 @@ function drawPhotoOnlyAndExport(ctx, img, cw, ch){
 
     if (sticker.classList.contains('tag')) {
       const text = sticker.childNodes[0].textContent.trim();
-      ctx.font = 'bold 24px "Space Grotesk", sans-serif';
+      ctx.font = 'bold 22px "Space Grotesk", sans-serif';
       const textWidth = ctx.measureText(text).width;
       const tagW = textWidth + 36;
-      const tagH = 38;
+      const tagH = 36;
 
       const grad = ctx.createLinearGradient(sx - tagW/2, sy - tagH/2, sx + tagW/2, sy + tagH/2);
       if (sticker.classList.contains('sayang')) {
@@ -606,11 +639,11 @@ function drawPhotoOnlyAndExport(ctx, img, cw, ch){
         grad.addColorStop(0, '#ff758c'); grad.addColorStop(1, '#ff7eb3');
       }
       ctx.fillStyle = grad;
-      roundRect(ctx, sx - tagW/2, sy - tagH/2, tagW, tagH, 19);
+      roundRect(ctx, sx - tagW/2, sy - tagH/2, tagW, tagH, 18);
       ctx.fill();
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = 2;
-      roundRect(ctx, sx - tagW/2, sy - tagH/2, tagW, tagH, 19);
+      roundRect(ctx, sx - tagW/2, sy - tagH/2, tagW, tagH, 18);
       ctx.stroke();
 
       ctx.fillStyle = '#fff';
@@ -619,7 +652,7 @@ function drawPhotoOnlyAndExport(ctx, img, cw, ch){
       ctx.fillText(text, sx, sy + 1);
     } else {
       const emoji = sticker.childNodes[0].textContent.trim();
-      ctx.font = '64px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+      ctx.font = '54px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(emoji, sx, sy);
@@ -627,11 +660,23 @@ function drawPhotoOnlyAndExport(ctx, img, cw, ch){
     ctx.restore();
   });
 
-  // 3. Export pure photo directly to device (no modal with instructions)
+  // 5. Bottom Caption & Subtitle inside Polaroid frame
+  ctx.save();
+  ctx.font = 'bold 24px "Space Grotesk", sans-serif';
+  ctx.fillStyle = '#362d2b';
+  ctx.textAlign = 'center';
+  ctx.fillText("✿ Mel's Cutest Angle ✿", cw / 2, ch - 92);
+
+  ctx.font = '500 16px "Plus Jakarta Sans", sans-serif';
+  ctx.fillStyle = '#8c827e';
+  ctx.fillText(`${p.title} • Today & Forever 💖`, cw / 2, ch - 60);
+  ctx.restore();
+
+  // 6. Direct Download to device with frame included!
   try {
     const dataUrl = ctx.canvas.toDataURL('image/png');
     const safeTitle = p.title.replace(/[^a-zA-Z0-9]/g, '_');
-    const filename = `Mel_Foto_${safeTitle}.png`;
+    const filename = `Mel_Polaroid_${safeTitle}.png`;
 
     const link = document.createElement('a');
     link.download = filename;
@@ -641,7 +686,7 @@ function drawPhotoOnlyAndExport(ctx, img, cw, ch){
     document.body.removeChild(link);
 
     sfxDing();
-    showToast('📸 Foto berhasil disimpan ke perangkat! 🎉');
+    showToast('📸 Polaroid berhasil disimpan ke perangkat! 🎉');
   } catch(err) {
     console.warn("Export error:", err);
     showToast('Gagal menyimpan foto 🥺');
