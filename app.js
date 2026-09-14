@@ -516,63 +516,60 @@ function takeSnapshot(){
 
 function renderAndDownloadPolaroid(){
   const p = PHOTOS[pbPhotoIdx];
+  const activeImg = document.getElementById('pb-main-img');
 
-  const canvas = document.createElement('canvas');
   // High-res Polaroid canvas dimensions
-  const cw = 720;
-  const ch = 920;
+  const cw = 680;
+  const ch = 860;
+  const canvas = document.createElement('canvas');
   canvas.width = cw;
   canvas.height = ch;
   const ctx = canvas.getContext('2d');
 
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-
-  img.onload = () => {
-    drawPolaroidCardAndExport(ctx, img, cw, ch);
-  };
-  img.onerror = () => {
-    const fallback = new Image();
-    fallback.onload = () => drawPolaroidCardAndExport(ctx, fallback, cw, ch);
-    fallback.src = p.src;
-  };
-  img.src = p.src;
+  // If the active photo is already loaded in DOM, draw it directly!
+  if (activeImg && activeImg.complete && activeImg.naturalWidth > 0) {
+    drawPolaroidCardAndExport(ctx, activeImg, cw, ch, canvas);
+  } else {
+    const img = new Image();
+    img.onload = () => drawPolaroidCardAndExport(ctx, img, cw, ch, canvas);
+    img.onerror = () => drawPolaroidCardAndExport(ctx, activeImg || img, cw, ch, canvas);
+    img.src = p.src;
+  }
 }
 
-function drawPolaroidCardAndExport(ctx, img, cw, ch){
+function drawPolaroidCardAndExport(ctx, img, cw, ch, canvas){
   const p = PHOTOS[pbPhotoIdx];
 
-  // 1. Draw Ivory Paper Polaroid Frame
+  // 1. Draw Ivory White Polaroid Card Frame (Bingkai Putih Polaroid)
   ctx.save();
-  ctx.fillStyle = '#fbf9f5';
-  ctx.shadowColor = 'rgba(0,0,0,0.18)';
-  ctx.shadowBlur = 18;
-  ctx.shadowOffsetY = 8;
-  roundRect(ctx, 20, 20, cw - 40, ch - 40, 24);
+  ctx.fillStyle = '#fdfbf7';
+  roundRect(ctx, 0, 0, cw, ch, 28);
   ctx.fill();
+
+  // Crisp subtle border around the polaroid card
+  ctx.strokeStyle = '#eae1dc';
+  ctx.lineWidth = 2;
+  roundRect(ctx, 1, 1, cw - 2, ch - 2, 28);
+  ctx.stroke();
   ctx.restore();
 
-  // Subtle border around frame
-  ctx.strokeStyle = 'rgba(230, 194, 191, 0.45)';
-  ctx.lineWidth = 2;
-  roundRect(ctx, 20, 20, cw - 40, ch - 40, 24);
-  ctx.stroke();
-
   // 2. Top Pin ✿
-  ctx.font = '28px sans-serif';
+  ctx.save();
+  ctx.font = '26px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#d4a9a4';
-  ctx.fillText('✿', cw / 2, 45);
+  ctx.fillStyle = '#e88b88';
+  ctx.fillText('✿', cw / 2, 30);
+  ctx.restore();
 
-  // 3. Photo Area inside frame
-  const photoX = 50;
-  const photoY = 70;
-  const photoW = cw - 100; // 620
-  const photoH = 700;      // 700
+  // 3. Photo Area inside the white frame
+  const photoX = 36;
+  const photoY = 52;
+  const photoW = cw - (photoX * 2); // 608px
+  const photoH = 670;               // 670px
 
   ctx.save();
-  roundRect(ctx, photoX, photoY, photoW, photoH, 14);
+  roundRect(ctx, photoX, photoY, photoW, photoH, 16);
   ctx.clip();
 
   // Filter effect
@@ -590,14 +587,18 @@ function drawPolaroidCardAndExport(ctx, img, cw, ch){
   }
 
   // Object-fit: cover with p.pos
-  const scale = Math.max(photoW / img.naturalWidth, photoH / img.naturalHeight);
-  const sW = img.naturalWidth * scale;
-  const sH = img.naturalHeight * scale;
+  const natW = img.naturalWidth || 600;
+  const natH = img.naturalHeight || 800;
+  const scale = Math.max(photoW / natW, photoH / natH);
+  const sW = natW * scale;
+  const sH = natH * scale;
 
   let xPct = 0.5, yPct = 0.5;
-  const parts = p.pos.split(' ');
-  if (parts[0] !== 'center') xPct = parseFloat(parts[0]) / 100;
-  if (parts[1] && parts[1] !== 'center') yPct = parseFloat(parts[1]) / 100;
+  if (p && p.pos) {
+    const parts = p.pos.split(' ');
+    if (parts[0] !== 'center') xPct = parseFloat(parts[0]) / 100;
+    if (parts[1] && parts[1] !== 'center') yPct = parseFloat(parts[1]) / 100;
+  }
 
   const dx = photoX - (sW - photoW) * xPct;
   const dy = photoY - (sH - photoH) * yPct;
@@ -605,91 +606,145 @@ function drawPolaroidCardAndExport(ctx, img, cw, ch){
   ctx.drawImage(img, dx, dy, sW, sH);
   ctx.restore();
 
+  // Inner subtle photo border
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, photoX, photoY, photoW, photoH, 16);
+  ctx.stroke();
+  ctx.restore();
+
   // 4. Placed Stickers inside photo area
   const layer = document.getElementById('pb-sticker-layer');
   const wrapper = document.getElementById('pb-photo-wrapper');
-  const wRect = wrapper.getBoundingClientRect();
+  if (layer && wrapper) {
+    const wRect = wrapper.getBoundingClientRect();
 
-  layer.querySelectorAll('.placed-sticker').forEach(sticker => {
-    const sRect = sticker.getBoundingClientRect();
-    const rx = (sRect.left - wRect.left + sRect.width / 2) / wRect.width;
-    const ry = (sRect.top - wRect.top + sRect.height / 2) / wRect.height;
+    layer.querySelectorAll('.placed-sticker').forEach(sticker => {
+      const sRect = sticker.getBoundingClientRect();
+      const rx = (sRect.left - wRect.left + sRect.width / 2) / wRect.width;
+      const ry = (sRect.top - wRect.top + sRect.height / 2) / wRect.height;
 
-    const sx = photoX + rx * photoW;
-    const sy = photoY + ry * photoH;
+      const sx = photoX + rx * photoW;
+      const sy = photoY + ry * photoH;
 
-    ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 4;
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetY = 4;
 
-    if (sticker.classList.contains('tag')) {
-      const text = sticker.childNodes[0].textContent.trim();
-      ctx.font = 'bold 22px "Space Grotesk", sans-serif';
-      const textWidth = ctx.measureText(text).width;
-      const tagW = textWidth + 36;
-      const tagH = 36;
+      if (sticker.classList.contains('tag')) {
+        const text = sticker.childNodes[0].textContent.trim();
+        ctx.font = 'bold 24px "Space Grotesk", sans-serif';
+        const textWidth = ctx.measureText(text).width;
+        const tagW = textWidth + 38;
+        const tagH = 38;
 
-      const grad = ctx.createLinearGradient(sx - tagW/2, sy - tagH/2, sx + tagW/2, sy + tagH/2);
-      if (sticker.classList.contains('sayang')) {
-        grad.addColorStop(0, '#a18cd1'); grad.addColorStop(1, '#fbc2eb');
-      } else if (sticker.classList.contains('bidadari')) {
-        grad.addColorStop(0, '#f6d365'); grad.addColorStop(1, '#fda085');
+        const grad = ctx.createLinearGradient(sx - tagW/2, sy - tagH/2, sx + tagW/2, sy + tagH/2);
+        if (sticker.classList.contains('sayang')) {
+          grad.addColorStop(0, '#a18cd1'); grad.addColorStop(1, '#fbc2eb');
+        } else if (sticker.classList.contains('bidadari')) {
+          grad.addColorStop(0, '#f6d365'); grad.addColorStop(1, '#fda085');
+        } else {
+          grad.addColorStop(0, '#ff758c'); grad.addColorStop(1, '#ff7eb3');
+        }
+        ctx.fillStyle = grad;
+        roundRect(ctx, sx - tagW/2, sy - tagH/2, tagW, tagH, 19);
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        roundRect(ctx, sx - tagW/2, sy - tagH/2, tagW, tagH, 19);
+        ctx.stroke();
+
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, sx, sy + 1);
       } else {
-        grad.addColorStop(0, '#ff758c'); grad.addColorStop(1, '#ff7eb3');
+        const emoji = sticker.childNodes[0].textContent.trim();
+        ctx.font = '60px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(emoji, sx, sy);
       }
-      ctx.fillStyle = grad;
-      roundRect(ctx, sx - tagW/2, sy - tagH/2, tagW, tagH, 18);
-      ctx.fill();
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 2;
-      roundRect(ctx, sx - tagW/2, sy - tagH/2, tagW, tagH, 18);
-      ctx.stroke();
-
-      ctx.fillStyle = '#fff';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(text, sx, sy + 1);
-    } else {
-      const emoji = sticker.childNodes[0].textContent.trim();
-      ctx.font = '54px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(emoji, sx, sy);
-    }
-    ctx.restore();
-  });
+      ctx.restore();
+    });
+  }
 
   // 5. Bottom Caption & Subtitle inside Polaroid frame
   ctx.save();
-  ctx.font = 'bold 24px "Space Grotesk", sans-serif';
-  ctx.fillStyle = '#362d2b';
-  ctx.textAlign = 'center';
-  ctx.fillText("✿ Mel's Cutest Angle ✿", cw / 2, ch - 92);
+  const captionEl = document.getElementById('pb-caption-text');
+  const mainCaption = (captionEl && captionEl.textContent.trim()) || "✿ Mel's Cutest Angle ✿";
 
-  ctx.font = '500 16px "Plus Jakarta Sans", sans-serif';
-  ctx.fillStyle = '#8c827e';
-  ctx.fillText(`${p.title} • Today & Forever 💖`, cw / 2, ch - 60);
+  ctx.font = 'bold 26px "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = '#2c2826';
+  ctx.textAlign = 'center';
+  ctx.fillText(mainCaption, cw / 2, 768);
+
+  ctx.font = '500 18px "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = '#8a7f7c';
+  ctx.fillText("Today & Forever 💖", cw / 2, 804);
   ctx.restore();
 
-  // 6. Direct Download to device with frame included!
-  try {
-    const dataUrl = ctx.canvas.toDataURL('image/png');
-    const safeTitle = p.title.replace(/[^a-zA-Z0-9]/g, '_');
-    const filename = `Mel_Polaroid_${safeTitle}.png`;
+  // 6. Direct Download to device with complete polaroid frame included!
+  const safeTitle = (p && p.title ? p.title : 'photo').replace(/[^a-zA-Z0-9]/g, '_');
+  const filename = `Mel_Polaroid_${safeTitle}.png`;
 
+  function triggerDownload(url, isBlob = false) {
     const link = document.createElement('a');
     link.download = filename;
-    link.href = dataUrl;
+    link.href = url;
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
-
+    setTimeout(() => {
+      document.body.removeChild(link);
+      if (isBlob) URL.revokeObjectURL(url);
+    }, 1200);
     sfxDing();
-    showToast('📸 Polaroid berhasil disimpan ke perangkat! 🎉');
-  } catch(err) {
-    console.warn("Export error:", err);
-    showToast('Gagal menyimpan foto 🥺');
+    showToast('📸 Bingkai polaroid tersimpan ke perangkat! 🎉');
+  }
+
+  if (canvas.toBlob) {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        // Mobile iOS Safari share sheet support for direct saving to camera roll
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS && navigator.canShare) {
+          try {
+            const file = new File([blob], filename, { type: 'image/png' });
+            if (navigator.canShare({ files: [file] })) {
+              navigator.share({
+                files: [file],
+                title: filename
+              }).then(() => {
+                sfxDing();
+                showToast('📸 Bingkai polaroid tersimpan ke galeri! 💖');
+              }).catch(() => {
+                const blobUrl = URL.createObjectURL(blob);
+                triggerDownload(blobUrl, true);
+              });
+              return;
+            }
+          } catch(e) {}
+        }
+        const blobUrl = URL.createObjectURL(blob);
+        triggerDownload(blobUrl, true);
+      } else {
+        try {
+          triggerDownload(canvas.toDataURL('image/png'));
+        } catch(err) {
+          console.warn("Export error:", err);
+          showToast('Gagal menyimpan polaroid 🥺');
+        }
+      }
+    }, 'image/png');
+  } else {
+    try {
+      triggerDownload(canvas.toDataURL('image/png'));
+    } catch(err) {
+      console.warn("Export error:", err);
+      showToast('Gagal menyimpan polaroid 🥺');
+    }
   }
 }
 
